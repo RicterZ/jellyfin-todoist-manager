@@ -14,8 +14,13 @@ todoist_client = TodoistClient(TODOIST_API_KEY)
 
 async def handle_item_added(data: Dict[str, Any]):
     """Handle Item Added event - create Todoist section if needed, then create task"""
-    # Mock data for testing (since real data format is unknown)
-    jellyfin_item_id = data.get('Id', data.get('ItemId', 'mock-jellyfin-id-123'))
+    # Get Jellyfin item ID (try multiple possible field names)
+    jellyfin_item_id = data.get('Id') or data.get('ItemId') or data.get('item_id')
+    
+    if not jellyfin_item_id:
+        logger.warning("No Jellyfin item ID found in ItemAdded event")
+        return
+    
     item_name = data.get('ItemName', 'Unknown Item')
     
     # Get series name for section
@@ -75,8 +80,8 @@ async def handle_playback_stop(data: Dict[str, Any]):
     if not is_completed:
         return
     
-    # Get Jellyfin item ID
-    jellyfin_item_id = data.get('Id', data.get('ItemId', ''))
+    # Get Jellyfin item ID (try multiple possible field names)
+    jellyfin_item_id = data.get('Id') or data.get('ItemId') or data.get('item_id')
     
     if not jellyfin_item_id:
         logger.warning("No Jellyfin item ID found in playback stop data")

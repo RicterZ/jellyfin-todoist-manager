@@ -1,12 +1,26 @@
 import sqlite3
 import logging
+import os
 from typing import Optional
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# Database directory - check if running in Docker, use /app/data, otherwise current directory
+# You can override with DB_DIR environment variable
+if os.path.exists("/app/data"):
+    # Running in Docker
+    default_db_dir = "/app/data"
+else:
+    # Running locally
+    default_db_dir = "."
+
+DB_DIR = Path(os.getenv("DB_DIR", default_db_dir))
+DB_DIR.mkdir(parents=True, exist_ok=True)
+
 # Database file path
-DB_PATH = Path("jellyfin_todoist.db")
+DB_PATH = DB_DIR / "jellyfin_todoist.db"
+logger.info(f"Database will be stored at: {DB_PATH}")
 
 
 def get_db_connection():
