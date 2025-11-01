@@ -31,12 +31,11 @@ async def handle_item_added(data: Dict[str, Any]):
     # Format title for Todoist task (only episode number, since section has series name)
     title = format_task_title(data)
     
-    # Create Todoist task in the section
+    # Create Todoist task in the section (no description needed)
     task = todoist_client.add_task(
         content=title,
         project_id=TODOIST_PROJECT_ID,
-        section_id=section_id,
-        description=f"Jellyfin Item ID: {jellyfin_item_id}"
+        section_id=section_id
     )
     
     if task and task.get('id'):

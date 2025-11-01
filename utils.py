@@ -1,4 +1,5 @@
 from typing import Dict, Any, Optional
+from datetime import datetime
 
 
 def parse_time_string(time_str: str) -> Optional[int]:
@@ -126,4 +127,48 @@ def format_series_title(data: Dict[str, Any]) -> str:
         title = f"{item_name} - {data.get('Id', '')}" if data.get('Id') else item_name
     
     return title
+
+
+def format_task_description(data: Dict[str, Any]) -> str:
+    """
+    Format task description with useful information
+    
+    Args:
+        data: Webhook data dictionary containing item information
+        
+    Returns:
+        Formatted description string
+    """
+    lines = []
+    
+    # Add timestamp
+    added_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines.append(f"📅 Added: {added_time}")
+    
+    # Item type
+    item_type = data.get('ItemType', '')
+    if item_type:
+        lines.append(f"📂 Type: {item_type}")
+    
+    # Production year
+    production_year = data.get('ProductionYear')
+    if production_year:
+        lines.append(f"📅 Year: {production_year}")
+    
+    # Runtime (if available)
+    runtime_str = data.get('RunTime', '')
+    if runtime_str:
+        lines.append(f"⏱️  Runtime: {runtime_str}")
+    
+    # Genres
+    genres = data.get('Genres', [])
+    if genres:
+        if isinstance(genres, list):
+            genres_str = ', '.join(str(g) for g in genres if g)
+            if genres_str:
+                lines.append(f"🎭 Genres: {genres_str}")
+        else:
+            lines.append(f"🎭 Genres: {genres}")
+    
+    return '\n'.join(lines)
 
