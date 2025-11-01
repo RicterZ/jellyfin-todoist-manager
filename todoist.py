@@ -27,6 +27,7 @@ class TodoistClient:
         self,
         content: str,
         project_id: Optional[str] = None,
+        section_id: Optional[str] = None,
         due_string: Optional[str] = None,
         due_date: Optional[str] = None,
         priority: int = 1,
@@ -40,6 +41,7 @@ class TodoistClient:
         Args:
             content: Task content (required)
             project_id: Project ID, if not provided will be added to inbox
+            section_id: Section ID, if provided task will be added to this section
             due_string: Due date string, e.g. "tomorrow", "next Monday", "2024-01-15"
             due_date: Due date in YYYY-MM-DD format
             priority: Priority level, 1-4 (1=normal, 2=important, 3=urgent, 4=very urgent)
@@ -59,6 +61,9 @@ class TodoistClient:
         
         if project_id:
             payload["project_id"] = project_id
+        
+        if section_id:
+            payload["section_id"] = section_id
         
         if due_string:
             payload["due_string"] = due_string
@@ -171,4 +176,209 @@ class TodoistClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get tasks: {e}")
             return []
+    
+    def get_projects(self) -> list:
+        """
+        Get list of all projects
+        
+        Returns:
+            List of projects
+        """
+        url = f"{self.BASE_URL}/projects"
+        
+        try:
+            response = requests.get(url, headers=self.headers)
+            response.raise_for_status()
+            
+            return response.json()
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to get projects: {e}")
+            return []
+    
+    def get_project_by_name(self, project_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get project by name
+        
+        Args:
+            project_name: Project name to search for
+            
+        Returns:
+            Project object if found, None otherwise
+        """
+        projects = self.get_projects()
+        
+        for project in projects:
+            if project.get('name') == project_name:
+                return project
+        
+        return None
+    
+    def create_project(
+        self,
+        name: str,
+        parent_id: Optional[str] = None,
+        color: Optional[str] = None,
+        is_favorite: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create a new project
+        
+        Args:
+            name: Project name (required)
+            parent_id: Parent project ID (for sub-projects)
+            color: Project color (integer 30-49 or string name)
+            is_favorite: Whether the project is favorite
+            
+        Returns:
+            Project object on success, None on failure
+        """
+        url = f"{self.BASE_URL}/projects"
+        
+        payload: Dict[str, Any] = {
+            "name": name,
+            "is_favorite": is_favorite
+        }
+        
+        if parent_id:
+            payload["parent_id"] = parent_id
+        if color:
+            payload["color"] = color
+        
+        try:
+            response = requests.post(url, json=payload, headers=self.headers)
+            response.raise_for_status()
+            
+            project = response.json()
+            logger.info(f"Created project: {name} (ID: {project.get('id')})")
+            return project
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to create project: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            return None
+    
+    def get_or_create_project(self, project_name: str) -> Optional[str]:
+        """
+        Get existing project by name, or create a new one if it doesn't exist
+        
+        Args:
+            project_name: Project name
+            
+        Returns:
+            Project ID if successful, None on failure
+        """
+        # Check if project exists
+        existing_project = self.get_project_by_name(project_name)
+        if existing_project:
+            return existing_project.get('id')
+        
+        # Create new project
+        new_project = self.create_project(name=project_name)
+        if new_project and new_project.get('id'):
+            return new_project.get('id')
+        
+        return None
+    
+    def get_sections(self, project_id: str) -> list:
+        """
+        Get list of sections for a project
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            List of sections
+        """
+        url = f"{self.BASE_URL}/sections"
+        params = {"project_id": project_id}
+        
+        try:
+            response = requests.get(url, headers=self.headers, params=params)
+            response.raise_for_status()
+            
+            return response.json()
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to get sections: {e}")
+            return []
+    
+    def get_section_by_name(self, project_id: str, section_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get section by name in a project
+        
+        Args:
+            project_id: Project ID
+            section_name: Section name to search for
+            
+        Returns:
+            Section object if found, None otherwise
+        """
+        sections = self.get_sections(project_id)
+        
+        for section in sections:
+            if section.get('name') == section_name:
+                return section
+        
+        return None
+    
+    def create_section(self, project_id: str, name: str, order: Optional[int] = None) -> Optional[Dict[str, Any]]:
+        """
+        Create a new section in a project
+        
+        Args:
+            project_id: Project ID
+            name: Section name (required)
+            order: Section order
+            
+        Returns:
+            Section object on success, None on failure
+        """
+        url = f"{self.BASE_URL}/sections"
+        
+        payload: Dict[str, Any] = {
+            "project_id": project_id,
+            "name": name
+        }
+        
+        if order is not None:
+            payload["order"] = order
+        
+        try:
+            response = requests.post(url, json=payload, headers=self.headers)
+            response.raise_for_status()
+            
+            section = response.json()
+            logger.info(f"Created section: {name} (ID: {section.get('id')}) in project {project_id}")
+            return section
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to create section: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            return None
+    
+    def get_or_create_section(self, project_id: str, section_name: str) -> Optional[str]:
+        """
+        Get existing section by name in a project, or create a new one if it doesn't exist
+        
+        Args:
+            project_id: Project ID
+            section_name: Section name
+            
+        Returns:
+            Section ID if successful, None on failure
+        """
+        # Check if section exists
+        existing_section = self.get_section_by_name(project_id, section_name)
+        if existing_section:
+            return existing_section.get('id')
+        
+        # Create new section
+        new_section = self.create_section(project_id=project_id, name=section_name)
+        if new_section and new_section.get('id'):
+            return new_section.get('id')
+        
+        return None
 

@@ -1,18 +1,57 @@
 import logging
 from typing import Dict, Any
 
-from utils import parse_time_string, format_series_title
+from config import TODOIST_API_KEY, TODOIST_PROJECT_ID
+from database import save_mapping, get_todoist_item_id, mark_completed
+from todoist import TodoistClient
+from utils import format_task_title, format_series_title, parse_time_string, get_series_name
 
 logger = logging.getLogger(__name__)
 
+# Initialize Todoist client
+todoist_client = TodoistClient(TODOIST_API_KEY)
+
 
 async def handle_item_added(data: Dict[str, Any]):
-    """Handle Item Added event"""
-    logger.info(f"Item Added: {data}")
+    """Handle Item Added event - create Todoist section if needed, then create task"""
+    # Mock data for testing (since real data format is unknown)
+    jellyfin_item_id = data.get('Id', data.get('ItemId', 'mock-jellyfin-id-123'))
+    item_name = data.get('ItemName', 'Unknown Item')
+    
+    # Get series name for section
+    series_name = get_series_name(data)
+    
+    # Get or create section based on series name in the configured project
+    section_id = todoist_client.get_or_create_section(TODOIST_PROJECT_ID, series_name)
+    
+    if not section_id:
+        logger.error(f"Failed to get or create section for series: {series_name}")
+        return
+    
+    # Format title for Todoist task (only episode number, since section has series name)
+    title = format_task_title(data)
+    
+    # Create Todoist task in the section
+    task = todoist_client.add_task(
+        content=title,
+        project_id=TODOIST_PROJECT_ID,
+        section_id=section_id,
+        description=f"Jellyfin Item ID: {jellyfin_item_id}"
+    )
+    
+    if task and task.get('id'):
+        todoist_item_id = task['id']
+        # Save mapping to database
+        if save_mapping(jellyfin_item_id, todoist_item_id):
+            logger.info(f"Created Todoist task {todoist_item_id} in section '{series_name}' for Jellyfin item {jellyfin_item_id}")
+        else:
+            logger.error(f"Failed to save mapping for Jellyfin item {jellyfin_item_id}")
+    else:
+        logger.error(f"Failed to create Todoist task for Jellyfin item {jellyfin_item_id}")
 
 
 async def handle_playback_stop(data: Dict[str, Any]):
-    """Handle Playback Stop event, check if playback is completed based on RunTime and PlaybackPosition"""
+    """Handle Playback Stop event, check if playback is completed and mark Todoist task as done"""
     
     # Get time values
     runtime_str = data.get('RunTime', '')
@@ -32,10 +71,31 @@ async def handle_playback_stop(data: Dict[str, Any]):
     # Check if completed (difference <= 1 minute)
     is_completed = time_diff <= 60
     
-    # Output result only when completed
-    if is_completed:
+    # Only process if completed
+    if not is_completed:
+        return
+    
+    # Get Jellyfin item ID
+    jellyfin_item_id = data.get('Id', data.get('ItemId', ''))
+    
+    if not jellyfin_item_id:
+        logger.warning("No Jellyfin item ID found in playback stop data")
+        return
+    
+    # Get Todoist item ID from database
+    todoist_item_id = get_todoist_item_id(jellyfin_item_id)
+    
+    if not todoist_item_id:
+        logger.warning(f"No Todoist task found for Jellyfin item {jellyfin_item_id}")
+        return
+    
+    # Mark Todoist task as completed
+    if todoist_client.complete_task(todoist_item_id):
+        # Update database to mark as completed
+        mark_completed(jellyfin_item_id)
         title = format_series_title(data)
+        logger.info(f"Marked Todoist task {todoist_item_id} as completed for: {title}")
         print(f"✅ Completed: {title}")
     else:
-        return
+        logger.error(f"Failed to complete Todoist task {todoist_item_id}")
 

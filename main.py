@@ -4,10 +4,14 @@ from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request, HTTPException
 
+from database import init_database
 from handlers import handle_item_added, handle_playback_stop
 
 # Load environment variables
 load_dotenv()
+
+# Initialize database
+init_database()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
