@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "jellyfin-webhook"
+version = "0.1.0"
+description = ""
+authors = ["ricterz <ricterzheng@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "0.104.1"
+pydantic = "2.5.0"
+uvicorn = {version = "0.24.0", extras = ["standard"]}
+requests = "^2.31.0"
+
+
+[[tool.poetry.source]]
+name = "mirrors"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
