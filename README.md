@@ -101,3 +101,4 @@ python main.py
 - 集成通知服务（邮件、Slack等）
 - 添加更多事件类型支持
 - 实现事件过滤和条件处理
+# jellyfin-todoist-manager
