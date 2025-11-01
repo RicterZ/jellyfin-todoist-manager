@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI application
-app = FastAPI(title="Jellyfin Webhook Receiver", version="1.0.0")
+app = FastAPI(title="Jellyfin Todoist Manager", version="1.0.0")
 
 
 @app.post("/webhook")

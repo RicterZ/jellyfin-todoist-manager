@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "jellyfin-webhook"
+name = "jellyfin-todoist-manager"
 version = "0.1.0"
 description = ""
 authors = ["ricterz <ricterzheng@gmail.com>"]
@@ -15,7 +15,7 @@ requests = "^2.31.0"
 
 [[tool.poetry.source]]
 name = "mirrors"
-url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"
+url = "https://mirror.sjtu.edu.cn/pypi/web/simple/"
 priority = "primary"
 
 [build-system]
