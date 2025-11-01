@@ -1,9 +1,13 @@
 import json
 import logging
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request, HTTPException
 
 from handlers import handle_item_added, handle_playback_stop
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -11,6 +11,7 @@ fastapi = "0.104.1"
 pydantic = "2.5.0"
 uvicorn = {version = "0.24.0", extras = ["standard"]}
 requests = "^2.31.0"
+python-dotenv = "^1.0.0"
 
 
 [[tool.poetry.source]]
