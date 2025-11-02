@@ -22,8 +22,6 @@ async def handle_item_added(data: Dict[str, Any]):
         logger.warning("No Jellyfin item ID found in ItemAdded event")
         return
     
-    item_name = data.get('ItemName', 'Unknown Item')
-    
     # Get series name for section
     series_name = get_series_name(data)
     
