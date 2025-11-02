@@ -381,4 +381,91 @@ class TodoistClient:
             return new_section.get('id')
         
         return None
+    
+    def update_section(self, section_id: str, name: Optional[str] = None, order: Optional[int] = None) -> bool:
+        """
+        Update a section (name or order)
+        
+        Args:
+            section_id: Section ID
+            name: New section name (optional)
+            order: New section order (optional)
+            
+        Returns:
+            True on success, False on failure
+        """
+        url = f"{self.BASE_URL}/sections/{section_id}"
+        
+        payload: Dict[str, Any] = {}
+        
+        if name is not None:
+            payload["name"] = name
+        if order is not None:
+            payload["order"] = order
+        
+        if not payload:
+            return False
+        
+        try:
+            response = requests.post(url, json=payload, headers=self.headers)
+            response.raise_for_status()
+            
+            logger.info(f"Updated section {section_id} (name={name}, order={order})")
+            return True
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to update section: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            return False
+    
+    def is_section_empty(self, project_id: str, section_id: str) -> bool:
+        """
+        Check if a section has no active (uncompleted) tasks
+        
+        Args:
+            project_id: Project ID
+            section_id: Section ID
+            
+        Returns:
+            True if section is empty (no active tasks), False otherwise
+        """
+        # Get all tasks for the project
+        tasks = self.get_tasks(project_id=project_id)
+        
+        # Filter tasks by section_id and check if any are not completed
+        for task in tasks:
+            task_section_id = task.get('section_id')
+            # Check if task belongs to this section and is not completed
+            if task_section_id == section_id:
+                # If task doesn't have 'is_completed' or it's False, section is not empty
+                if not task.get('is_completed', False):
+                    return False
+        
+        return True
+    
+    def move_empty_section_to_end(self, project_id: str, section_id: str) -> bool:
+        """
+        Move an empty section to the end of the project
+        
+        Args:
+            project_id: Project ID
+            section_id: Section ID
+            
+        Returns:
+            True on success, False on failure
+        """
+        # Get all sections for the project
+        sections = self.get_sections(project_id)
+        
+        if not sections:
+            return False
+        
+        # Find the maximum order value
+        max_order = max((s.get('order', 0) for s in sections), default=0)
+        
+        # Set the section's order to max_order + 1 to move it to the end
+        new_order = max_order + 1
+        
+        return self.update_section(section_id, order=new_order)
 

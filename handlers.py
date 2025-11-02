@@ -94,6 +94,12 @@ async def handle_playback_stop(data: Dict[str, Any]):
         logger.warning(f"No Todoist task found for Jellyfin item {jellyfin_item_id}")
         return
     
+    # Get section ID from the task before completing it
+    task_info = todoist_client.get_task(todoist_item_id)
+    section_id = None
+    if task_info:
+        section_id = task_info.get('section_id')
+    
     # Mark Todoist task as completed
     if todoist_client.complete_task(todoist_item_id):
         # Update database to mark as completed
@@ -101,6 +107,16 @@ async def handle_playback_stop(data: Dict[str, Any]):
         title = format_series_title(data)
         logger.info(f"Marked Todoist task {todoist_item_id} as completed for: {title}")
         print(f"✅ Completed: {title}")
+        
+        # Check if section is empty and move it to end if so
+        if section_id:
+            # Check if section is now empty (after task completion)
+            if todoist_client.is_section_empty(TODOIST_PROJECT_ID, section_id):
+                # Move empty section to end
+                if todoist_client.move_empty_section_to_end(TODOIST_PROJECT_ID, section_id):
+                    logger.info(f"Moved empty section to end: {section_id}")
+                else:
+                    logger.warning(f"Failed to move empty section to end: {section_id}")
     else:
         logger.error(f"Failed to complete Todoist task {todoist_item_id}")
 
