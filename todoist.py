@@ -269,12 +269,10 @@ class TodoistClient:
         Returns:
             Project ID if successful, None on failure
         """
-        # Check if project exists
         existing_project = self.get_project_by_name(project_name)
         if existing_project:
             return existing_project.get('id')
         
-        # Create new project
         new_project = self.create_project(name=project_name)
         if new_project and new_project.get('id'):
             return new_project.get('id')
@@ -370,12 +368,10 @@ class TodoistClient:
         Returns:
             Section ID if successful, None on failure
         """
-        # Check if section exists
         existing_section = self.get_section_by_name(project_id, section_name)
         if existing_section:
             return existing_section.get('id')
         
-        # Create new section
         new_section = self.create_section(project_id=project_id, name=section_name)
         if new_section and new_section.get('id'):
             return new_section.get('id')
@@ -416,6 +412,7 @@ class TodoistClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to update section: {e}")
             if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response status: {e.response.status_code}")
                 logger.error(f"Response content: {e.response.text}")
             return False
     
@@ -430,15 +427,10 @@ class TodoistClient:
         Returns:
             True if section is empty (no active tasks), False otherwise
         """
-        # Get all tasks for the project
         tasks = self.get_tasks(project_id=project_id)
         
-        # Filter tasks by section_id and check if any are not completed
         for task in tasks:
-            task_section_id = task.get('section_id')
-            # Check if task belongs to this section and is not completed
-            if task_section_id == section_id:
-                # If task doesn't have 'is_completed' or it's False, section is not empty
+            if task.get('section_id') == section_id:
                 if not task.get('is_completed', False):
                     return False
         
@@ -455,17 +447,23 @@ class TodoistClient:
         Returns:
             True on success, False on failure
         """
-        # Get all sections for the project
         sections = self.get_sections(project_id)
         
         if not sections:
+            logger.warning(f"No sections found for project {project_id}")
             return False
         
-        # Find the maximum order value
+        target_section = next((s for s in sections if s.get('id') == section_id), None)
+        if not target_section:
+            logger.warning(f"Section {section_id} not found in project {project_id}")
+            return False
+        
+        current_order = target_section.get('order', 0)
         max_order = max((s.get('order', 0) for s in sections), default=0)
         
-        # Set the section's order to max_order + 1 to move it to the end
-        new_order = max_order + 1
+        if current_order >= max_order:
+            return True
         
+        new_order = max_order + 1
         return self.update_section(section_id, order=new_order)
 
