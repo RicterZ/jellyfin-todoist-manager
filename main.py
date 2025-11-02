@@ -14,7 +14,7 @@ load_dotenv()
 init_database()
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI application
@@ -30,16 +30,6 @@ async def receive_webhook(request: Request):
         
         webhook_data = json.loads(body_str)
         notification_type = webhook_data.get('NotificationType', '')
-        
-        # Log webhook data structure for debugging ID extraction
-        logger.debug(f"Webhook received - Type: {notification_type}")
-        logger.debug(f"Webhook data keys: {list(webhook_data.keys())}")
-        
-        # Log all possible ID-related fields
-        id_fields = ['Id', 'ItemId', 'item_id', 'id']
-        for field in id_fields:
-            if field in webhook_data:
-                logger.debug(f"  {field}: {webhook_data[field]}")
         
         if notification_type == 'ItemAdded':
             await handle_item_added(webhook_data)
