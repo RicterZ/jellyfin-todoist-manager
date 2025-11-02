@@ -15,11 +15,24 @@ todoist_client = TodoistClient(TODOIST_API_KEY)
 async def handle_item_added(data: Dict[str, Any]):
     """Handle Item Added event - create Todoist section if needed, then create task"""
     # Get Jellyfin item ID (try multiple possible field names)
-    jellyfin_item_id = data.get('Id') or data.get('ItemId') or data.get('item_id')
+    # Try various possible field names for ID
+    possible_id_fields = ['Id', 'ItemId', 'item_id', 'id', 'Item', 'item']
+    jellyfin_item_id = None
+    
+    for field in possible_id_fields:
+        value = data.get(field)
+        if value:
+            jellyfin_item_id = value
+            logger.debug(f"ItemAdded - Found ID in field '{field}': {jellyfin_item_id}")
+            break
     
     if not jellyfin_item_id:
         logger.warning("No Jellyfin item ID found in ItemAdded event")
+        logger.warning(f"ItemAdded data keys: {list(data.keys())}")
+        logger.warning(f"ItemAdded data sample: {str(data)[:500]}")
         return
+    
+    logger.info(f"ItemAdded - Using Jellyfin item ID: {jellyfin_item_id}")
     
     item_name = data.get('ItemName', 'Unknown Item')
     
@@ -81,11 +94,24 @@ async def handle_playback_stop(data: Dict[str, Any]):
         return
     
     # Get Jellyfin item ID (try multiple possible field names)
-    jellyfin_item_id = data.get('Id') or data.get('ItemId') or data.get('item_id')
+    # Try various possible field names for ID
+    possible_id_fields = ['Id', 'ItemId', 'item_id', 'id', 'Item', 'item']
+    jellyfin_item_id = None
+    
+    for field in possible_id_fields:
+        value = data.get(field)
+        if value:
+            jellyfin_item_id = value
+            logger.debug(f"PlaybackStop - Found ID in field '{field}': {jellyfin_item_id}")
+            break
     
     if not jellyfin_item_id:
         logger.warning("No Jellyfin item ID found in playback stop data")
+        logger.warning(f"PlaybackStop data keys: {list(data.keys())}")
+        logger.warning(f"PlaybackStop data sample: {str(data)[:500]}")
         return
+    
+    logger.info(f"PlaybackStop - Using Jellyfin item ID: {jellyfin_item_id}")
     
     # Get Todoist item ID from database
     todoist_item_id = get_todoist_item_id(jellyfin_item_id)
