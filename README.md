@@ -9,7 +9,8 @@ Automatically manage your Todoist tasks based on Jellyfin media library events. 
 - Organizes tasks by series in Todoist sections
 - Moves empty sections to the end of the project
 
-![Features Overview](./docs/images/features-overview.png)
+<img width="2094" height="1261" alt="image" src="https://github.com/user-attachments/assets/cebdb8b6-4416-4b0e-b736-202c52bc83b9" />
+
 
 ## Deployment
 
@@ -54,16 +55,8 @@ The service will be available at `http://localhost:8000`
 
 ### Setting up Jellyfin Webhook
 
-![Jellyfin Dashboard](./docs/images/jellyfin-dashboard.png)
-
 1. In Jellyfin, go to **Dashboard → Webhooks**
-
-![Jellyfin Webhooks Page](./docs/images/jellyfin-webhooks-page.png)
-
 2. Click **Add Webhook**
-
-![Jellyfin Webhook Configuration](./docs/images/jellyfin-webhook-config.png)
-
 3. Configure the webhook:
    - **Webhook URL**: `http://your-server-ip:8000/webhook`
      - If running on the same machine as Jellyfin: `http://localhost:8000/webhook`
@@ -72,7 +65,8 @@ The service will be available at `http://localhost:8000`
      - ✅ Item Added
      - ✅ Playback Stop
 
-![Jellyfin Notification Types](./docs/images/jellyfin-notification-types.png)
+<img width="1980" height="1187" alt="image" src="https://github.com/user-attachments/assets/effcf545-17e6-48a4-aed2-f36dc784a15e" />
+
 
 4. Save the webhook configuration
 
@@ -85,3 +79,4 @@ The service will be available at `http://localhost:8000`
 ## License
 
 MIT License
+
