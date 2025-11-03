@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any
 from datetime import datetime
 import requests
 
@@ -468,80 +468,5 @@ class TodoistClient:
         new_order = max_order + 1
         return self.update_section(section_id, order=new_order)
 
-    def _parse_created_at(self, created_at: Optional[str]) -> float:
-        """
-        Parse Todoist ISO8601 created_at to timestamp seconds.
-        Returns 0.0 if parsing fails or value missing.
-        """
-        if not created_at or not isinstance(created_at, str):
-            return 0.0
-        try:
-            # Todoist uses ISO8601, e.g. "2023-09-18T10:20:30.000000Z"
-            value = created_at.replace("Z", "+00:00")
-            return datetime.fromisoformat(value).timestamp()
-        except Exception:
-            return 0.0
-
-    def reorder_sections(self, project_id: str, front_section_id: Optional[str] = None) -> bool:
-        """
-        Reorder sections for a project with rules:
-        1) Empty sections go to the end
-        2) The section that just received a new task goes to the front
-        3) Other sections sorted by latest task created_at in descending order
-
-        Args:
-            project_id: Todoist project ID
-            front_section_id: Section ID to force to the very front (optional)
-
-        Returns:
-            True if at least one section order was updated, False otherwise
-        """
-        sections = self.get_sections(project_id)
-        if not sections:
-            return False
-
-        tasks = self.get_tasks(project_id=project_id)  # active (uncompleted) tasks
-
-        # Build section -> latest_created_at and empty flag
-        latest_by_section: Dict[str, float] = {}
-        has_task_by_section: Dict[str, bool] = {}
-
-        for task in tasks:
-            sid = task.get("section_id")
-            if not sid:
-                continue
-            has_task_by_section[sid] = True
-            created_ts = self._parse_created_at(task.get("created_at"))
-            prev = latest_by_section.get(sid, 0.0)
-            if created_ts > prev:
-                latest_by_section[sid] = created_ts
-
-        # Compose sortable entries
-        sortable: List[Tuple[int, float, str, Dict[str, Any]]] = []
-        for s in sections:
-            sid = s.get("id")
-            is_empty = not has_task_by_section.get(sid, False)
-            # Priority key: non-empty=0, empty=1 so empties go last
-            empty_rank = 1 if is_empty else 0
-            # Front boost: if equals front_section_id, use special rank -1 to force front
-            front_rank = -1 if (front_section_id and sid == front_section_id) else 0
-            # Latest timestamp for sorting (desc), default 0.0
-            latest_ts = latest_by_section.get(sid, 0.0)
-
-            # The overall priority tuple sorts by (front_rank, empty_rank, -latest_ts)
-            # We can't sort by negative easily in tuple with float; store positive and invert later
-            sortable.append((front_rank, empty_rank, latest_ts, sid, s))
-
-        # Sort: front_rank asc (-1 first), then empty_rank asc (non-empty first), then latest_ts desc
-        sortable.sort(key=lambda t: (t[0], t[1], -t[2]))
-
-        # Assign new sequential orders starting from 1
-        changed = False
-        for index, (_, __, ___, sid, s) in enumerate(sortable, start=1):
-            current_order = s.get("order")
-            if current_order != index:
-                ok = self.update_section(sid, order=index)
-                if ok:
-                    changed = True
-        return changed
+    # Note: sorting/reordering logic removed per latest requirements
 
