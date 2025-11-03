@@ -45,9 +45,6 @@ async def handle_item_added(data: Dict[str, Any]):
     title = format_task_title(data)
     
     try:
-        logger.info(
-            f"Todoist add_task params: content='{title}', project_id={TODOIST_PROJECT_ID}, section_id={section_id}, due_string='today'"
-        )
         task = todoist_api.add_task(content=title, project_id=TODOIST_PROJECT_ID, section_id=section_id, due_string="today")
     except Exception as e:
         err_msg = getattr(e, 'message', str(e))
@@ -107,35 +104,15 @@ async def handle_playback_stop(data: Dict[str, Any]):
         return
     
     section_id = None
-    # Fetch task details for debugging (verify visibility and project)
-    try:
-        t = todoist_api.get_task(todoist_item_id)
-        pid = getattr(t, 'project_id', None)
-        sid = getattr(t, 'section_id', None)
-        content = getattr(t, 'content', None)
-        logger.info(f"Debug get_task: id={todoist_item_id}, project_id={pid}, section_id={sid}, content={content!r}")
-        section_id = sid
-    except Exception as e:
-        logger.error(f"Debug get_task failed: {getattr(e, 'message', str(e))}")
     
     closed_ok = False
     try:
-        logger.info(f"Todoist complete_task params: task_id={todoist_item_id!r}")
         closed_ok = todoist_api.complete_task(task_id=todoist_item_id)
     except Exception as e:
         err_msg = getattr(e, 'message', str(e))
         status_code = getattr(e, 'status_code', None)
         response_body = getattr(e, 'response_body', None)
         logger.error(f"Failed to complete task via SDK: {err_msg} (status={status_code}) body={response_body}")
-        # Fallback: raw HTTP to capture server response
-        try:
-            import requests
-            url = f"https://api.todoist.com/api/v1/tasks/{todoist_item_id}/close"
-            headers = {"Authorization": f"Bearer {TODOIST_API_KEY}"}
-            r = requests.post(url, headers=headers)
-            logger.error(f"Fallback close HTTP status={r.status_code} body={r.text}")
-        except Exception as ee:
-            logger.error(f"Fallback close request failed: {ee}")
         closed_ok = False
 
     if closed_ok:
