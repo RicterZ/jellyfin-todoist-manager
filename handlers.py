@@ -113,7 +113,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
         logger.warning(f"No Todoist task found for Jellyfin item {jellyfin_item_id}")
         return
     
-    # Resolve section by series name (avoid get_task on completed tasks which may 400)
+    # Resolve section by series name (avoid get_task on completed tasks which may error)
     section_id = None
     series_name = get_series_name(data)
     try:
@@ -131,12 +131,12 @@ async def handle_playback_stop(data: Dict[str, Any]):
     # Mark Todoist task as completed
     closed_ok = False
     try:
-        closed_ok = todoist_api.close_task(task_id=todoist_item_id)
+        closed_ok = todoist_api.complete_task(task_id=todoist_item_id)
     except Exception as e:
         err_msg = getattr(e, 'message', str(e))
         status_code = getattr(e, 'status_code', None)
         response_body = getattr(e, 'response_body', None)
-        logger.error(f"Failed to close task via SDK: {err_msg} (status={status_code}) body={response_body}")
+        logger.error(f"Failed to complete task via SDK: {err_msg} (status={status_code}) body={response_body}")
         closed_ok = False
 
     if closed_ok:
@@ -147,15 +147,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
         print(f"✅ Completed: {title}")
         
         # If section is empty after completion, archive it (with short retry for consistency)
-        # Fallback: if section_id missing, try resolve by series name
-        if not section_id:
-            series_name = get_series_name(data)
-            # resolve by name using SDK list
-            sections = todoist_api.get_sections(project_id=TODOIST_PROJECT_ID)
-            for s in sections:
-                if s.name == series_name:
-                    section_id = s.id
-                    break
+        # section_id was already resolved above; no further fallback
 
         if section_id:
             empty = False
