@@ -44,6 +44,9 @@ async def handle_item_added(data: Dict[str, Any]):
     title = format_task_title(data)
     
     try:
+        logger.info(
+            f"Todoist add_task params: content='{title}', project_id={TODOIST_PROJECT_ID}, section_id={section_id}, due_string='today'"
+        )
         task = todoist_api.add_task(content=title, project_id=TODOIST_PROJECT_ID, section_id=section_id, due_string="today")
     except Exception as e:
         err_msg = getattr(e, 'message', str(e))
@@ -95,6 +98,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
     section_id = None
     series_name = get_series_name(data)
     try:
+        logger.info(f"Todoist get_sections params: project_id={TODOIST_PROJECT_ID}")
         sections = todoist_api.get_sections(project_id=TODOIST_PROJECT_ID)
         for s in sections:
             if s.name == series_name:
@@ -108,6 +112,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
     
     closed_ok = False
     try:
+        logger.info(f"Todoist complete_task params: task_id={todoist_item_id}")
         closed_ok = todoist_api.complete_task(task_id=todoist_item_id)
     except Exception as e:
         err_msg = getattr(e, 'message', str(e))
