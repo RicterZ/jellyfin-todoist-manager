@@ -6,11 +6,21 @@ from typing import Optional, List
 from todoist_api_python.api import TodoistAPI
 
 
+def _iter_results(obj):
+    if isinstance(obj, list):
+        for it in obj:
+            yield it
+    else:
+        for batch in obj:
+            for it in batch:
+                yield it
+
+
 def get_or_create_section(api: TodoistAPI, project_id: str, name: str) -> Optional[str]:
-    sections = api.get_sections(project_id=project_id)
-    for s in sections:
-        if s.name == name:
-            return s.id
+    sections_iter = api.get_sections(project_id=project_id)
+    for s in _iter_results(sections_iter):
+        if getattr(s, 'name', None) == name:
+            return getattr(s, 'id', None)
     created = api.add_section(project_id=project_id, name=name)
     return created.id if created else None
 
