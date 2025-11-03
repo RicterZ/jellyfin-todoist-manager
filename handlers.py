@@ -20,7 +20,7 @@ todoist_api = TodoistAPI(TODOIST_API_KEY)
 
 
 async def handle_item_added(data: Dict[str, Any]):
-    jellyfin_item_id = data.get('ItemId') or data.get('Id') or data.get('item_id') or data.get('id')
+    jellyfin_item_id = data.get('ItemId')
     
     if not jellyfin_item_id:
         logger.warning("No Jellyfin item ID found in ItemAdded event")
@@ -80,7 +80,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
     if not is_completed:
         return
     
-    jellyfin_item_id = data.get('ItemId', '')
+    jellyfin_item_id = data.get('ItemId')
     
     if not jellyfin_item_id:
         logger.warning("No Jellyfin item ID found in playback stop data")
