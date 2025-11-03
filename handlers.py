@@ -52,7 +52,15 @@ async def handle_item_added(data: Dict[str, Any]):
     title = format_task_title(data)
     
     # Create Todoist task in the section (no description needed, due date is today)
-    task = todoist_api.add_task(content=title, project_id=TODOIST_PROJECT_ID, section_id=section_id, due_string="today")
+    try:
+        task = todoist_api.add_task(content=title, project_id=TODOIST_PROJECT_ID, section_id=section_id, due_string="today")
+    except Exception as e:
+        # Print detailed SDK error if available
+        err_msg = getattr(e, 'message', str(e))
+        status_code = getattr(e, 'status_code', None)
+        response_body = getattr(e, 'response_body', None)
+        logger.error(f"Failed to add task via SDK: {err_msg} (status={status_code}) body={response_body}")
+        return
     
     if task and getattr(task, 'id', None):
         todoist_item_id = task.id
@@ -106,13 +114,30 @@ async def handle_playback_stop(data: Dict[str, Any]):
         return
     
     # Get section ID from the task before completing it
-    task_info = todoist_api.get_task(todoist_item_id)
+    try:
+        task_info = todoist_api.get_task(todoist_item_id)
+    except Exception as e:
+        err_msg = getattr(e, 'message', str(e))
+        status_code = getattr(e, 'status_code', None)
+        response_body = getattr(e, 'response_body', None)
+        logger.error(f"Failed to get task via SDK: {err_msg} (status={status_code}) body={response_body}")
+        task_info = None
     section_id = None
     if task_info:
         section_id = getattr(task_info, 'section_id', None)
     
     # Mark Todoist task as completed
-    if todoist_api.close_task(todoist_item_id):
+    closed_ok = False
+    try:
+        closed_ok = todoist_api.close_task(todoist_item_id)
+    except Exception as e:
+        err_msg = getattr(e, 'message', str(e))
+        status_code = getattr(e, 'status_code', None)
+        response_body = getattr(e, 'response_body', None)
+        logger.error(f"Failed to close task via SDK: {err_msg} (status={status_code}) body={response_body}")
+        closed_ok = False
+
+    if closed_ok:
         # Update database to mark as completed
         mark_completed(jellyfin_item_id)
         title = format_series_title(data)
