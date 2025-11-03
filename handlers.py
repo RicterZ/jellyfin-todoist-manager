@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any
+import time
 
 from config import TODOIST_API_KEY, TODOIST_PROJECT_ID
 from database import save_mapping, get_todoist_item_id, mark_completed
@@ -116,10 +117,22 @@ async def handle_playback_stop(data: Dict[str, Any]):
         logger.info(f"Marked Todoist task {todoist_item_id} as completed for: {title}")
         print(f"✅ Completed: {title}")
         
-        # If section is empty after completion, archive it
+        # If section is empty after completion, archive it (with short retry for consistency)
+        # Fallback: if section_id missing, try resolve by series name
+        if not section_id:
+            series_name = get_series_name(data)
+            sec = todoist_client.get_section_by_name(TODOIST_PROJECT_ID, series_name)
+            if sec:
+                section_id = sec.get('id')
+
         if section_id:
-            # Check if section is now empty (after task completion)
-            if todoist_client.is_section_empty(TODOIST_PROJECT_ID, section_id):
+            empty = False
+            for _ in range(5):  # retry up to ~2.5s
+                if todoist_client.is_section_empty(TODOIST_PROJECT_ID, section_id):
+                    empty = True
+                    break
+                time.sleep(0.5)
+            if empty:
                 if todoist_client.archive_section(section_id):
                     logger.info(f"Archived empty section: {section_id}")
                 else:
