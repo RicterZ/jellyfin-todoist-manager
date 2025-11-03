@@ -35,8 +35,8 @@ async def handle_item_added(data: Dict[str, Any]):
     
     # If a section with same name was archived, unarchive and reuse it; otherwise get/create
     archived_section = get_archived_section_by_name(TODOIST_API_KEY, TODOIST_PROJECT_ID, series_name)
-    if archived_section and archived_section.get('id'):
-        section_id = archived_section.get('id')
+    if archived_section:
+        section_id = archived_section
         if not unarchive_section(TODOIST_API_KEY, section_id):
             logger.error(f"Failed to unarchive section for series: {series_name}")
             return
@@ -54,8 +54,8 @@ async def handle_item_added(data: Dict[str, Any]):
     # Create Todoist task in the section (no description needed, due date is today)
     task = todoist_api.add_task(content=title, project_id=TODOIST_PROJECT_ID, section_id=section_id, due_string="today")
     
-    if task and task.get('id'):
-        todoist_item_id = task['id']
+    if task and getattr(task, 'id', None):
+        todoist_item_id = task.id
         # Save mapping to database
         if save_mapping(jellyfin_item_id, todoist_item_id):
             logger.info(f"Created Todoist task {todoist_item_id} in section '{series_name}' for Jellyfin item {jellyfin_item_id}")
@@ -109,7 +109,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
     task_info = todoist_api.get_task(todoist_item_id)
     section_id = None
     if task_info:
-        section_id = task_info.get('section_id')
+        section_id = getattr(task_info, 'section_id', None)
     
     # Mark Todoist task as completed
     if todoist_api.close_task(todoist_item_id):
