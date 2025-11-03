@@ -130,7 +130,5 @@ def map_legacy_task_id_to_v1(api_token: str, legacy_id: str) -> Optional[str]:
         except Exception:
             continue
     return None
-    except Exception:
-        return None
 
 
