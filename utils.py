@@ -107,23 +107,19 @@ def format_series_title(data: Dict[str, Any]) -> str:
         if series_name:
             season_number = data.get('SeasonNumber', '')
             episode_number = data.get('EpisodeNumber', '')
-            item_id = data.get('Id', '')
-            
             if season_number and episode_number:
-                # Convert to int if possible, otherwise use as string
                 try:
                     season_int = int(season_number)
                     episode_int = int(episode_number)
-                    title = f"{series_name} S{season_int:02d}E{episode_int:02d} - {item_id}"
+                    title = f"{series_name} S{season_int:02d}E{episode_int:02d}"
                 except (ValueError, TypeError):
-                    # If conversion fails, use as string
-                    title = f"{series_name} S{season_number}E{episode_number} - {item_id}"
+                    title = f"{series_name} S{season_number}E{episode_number}"
             else:
-                title = f"{series_name} - {item_name} - {item_id}"
+                title = f"{series_name} - {item_name}"
         else:
-            title = f"{item_name} - {item_id}" if data.get('Id') else item_name
+            title = item_name
     else:
-        title = f"{item_name} - {data.get('Id', '')}" if data.get('Id') else item_name
+        title = item_name
     
     return title
 
