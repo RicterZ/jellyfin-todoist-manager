@@ -105,12 +105,8 @@ async def handle_playback_stop(data: Dict[str, Any]):
         err_msg = getattr(e, 'message', str(e))
         status_code = getattr(e, 'status_code', None)
         response_body = getattr(e, 'response_body', None)
-        if status_code == 400 or (isinstance(err_msg, str) and '400' in err_msg):
-            logger.warning(f"Treating complete_task 400 as already completed for task {todoist_item_id}")
-            closed_ok = True
-        else:
-            logger.error(f"Failed to complete task via SDK: {err_msg} (status={status_code}) body={response_body}")
-            closed_ok = False
+        logger.error(f"Failed to complete task via SDK: {err_msg} (status={status_code}) body={response_body}")
+        closed_ok = False
 
     if closed_ok:
         mark_completed(jellyfin_item_id)
