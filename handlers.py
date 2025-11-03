@@ -100,7 +100,7 @@ async def handle_playback_stop(data: Dict[str, Any]):
     
     # Get Jellyfin item ID - prioritize ItemId over Id
     # ItemId is the actual media item ID, while Id might be a session/event ID
-    jellyfin_item_id = data.get('ItemId') or data.get('Id') or data.get('item_id') or data.get('id')
+    jellyfin_item_id = data.get('ItemId')
     
     if not jellyfin_item_id:
         logger.warning("No Jellyfin item ID found in playback stop data")
@@ -136,8 +136,14 @@ async def handle_playback_stop(data: Dict[str, Any]):
         err_msg = getattr(e, 'message', str(e))
         status_code = getattr(e, 'status_code', None)
         response_body = getattr(e, 'response_body', None)
-        logger.error(f"Failed to complete task via SDK: {err_msg} (status={status_code}) body={response_body}")
-        closed_ok = False
+        # If task already completed or invalid state, Todoist may return 400.
+        # Treat 400 as idempotent success to avoid blocking the flow.
+        if status_code == 400 or (isinstance(err_msg, str) and '400' in err_msg):
+            logger.warning(f"Treating complete_task 400 as already completed for task {todoist_item_id}")
+            closed_ok = True
+        else:
+            logger.error(f"Failed to complete task via SDK: {err_msg} (status={status_code}) body={response_body}")
+            closed_ok = False
 
     if closed_ok:
         # Update database to mark as completed
