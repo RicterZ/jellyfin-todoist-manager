@@ -12,6 +12,7 @@ from todoist_helpers import (
     unarchive_section,
     archive_section,
     is_section_empty,
+    map_legacy_task_id_to_v1,
 )
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,14 @@ async def handle_playback_stop(data: Dict[str, Any]):
     
     todoist_item_id = get_todoist_item_id(jellyfin_item_id)
     logger.info(f"Mapping lookup: Jellyfin {jellyfin_item_id} -> Todoist {todoist_item_id}")
+    # If mapping is a deprecated numeric ID, map it to v1 string ID and persist
+    if todoist_item_id and todoist_item_id.isdigit():
+        new_id = map_legacy_task_id_to_v1(TODOIST_API_KEY, todoist_item_id)
+        if new_id:
+            logger.info(f"Mapped legacy Todoist ID {todoist_item_id} -> v1 ID {new_id}")
+            todoist_item_id = new_id
+            # Update database mapping to new ID
+            save_mapping(jellyfin_item_id, todoist_item_id)
     if not todoist_item_id:
         logger.warning(f"No Todoist task found for Jellyfin item {jellyfin_item_id}")
         return

@@ -93,3 +93,35 @@ def get_archived_section_by_name(api_token: str, project_id: str, name: str) -> 
     return None
 
 
+def map_legacy_task_id_to_v1(api_token: str, legacy_id: str) -> Optional[str]:
+    """Map a deprecated numeric task ID to the new v1 string ID.
+    Returns new string ID on success, or None if not mappable.
+    """
+    if not legacy_id or not legacy_id.isdigit():
+        return None
+    url = "https://api.todoist.com/api/v1/ids/get_id_mappings"
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "ids": [int(legacy_id)],
+        "resource_type": "task",
+    }
+    try:
+        r = requests.post(url, headers=headers, data=json.dumps(payload))
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        mappings = data.get("mappings") or data
+        # Expect list of objects like {"old_id": 123, "new_id": "6X4V..."}
+        for m in mappings:
+            old_id = str(m.get("old_id"))
+            new_id = m.get("new_id")
+            if old_id == legacy_id and new_id:
+                return str(new_id)
+        return None
+    except Exception:
+        return None
+
+
