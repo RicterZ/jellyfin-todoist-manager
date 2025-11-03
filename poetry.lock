@@ -220,6 +220,32 @@ url = "https://mirror.sjtu.edu.cn/pypi/web/simple"
 reference = "mirrors"
 
 [[package]]
+name = "dataclass-wizard"
+version = "0.35.1"
+description = "Lightning-fast JSON wizardry for Python dataclasses — effortless serialization right out of the box!"
+optional = false
+python-versions = "*"
+files = [
+    {file = "dataclass-wizard-0.35.1.tar.gz", hash = "sha256:18c780e3c574c3534cb2bbc447025cff140f0e640cd98e143a7d234c6445d09e"},
+    {file = "dataclass_wizard-0.35.1-py2.py3-none-any.whl", hash = "sha256:30858e14d780a40792fa190d55220a12cd0ef02a3d8fb8373b1eb4363d4b5549"},
+]
+
+[package.dependencies]
+typing-extensions = {version = ">=4.9.0", markers = "python_version <= \"3.12\""}
+
+[package.extras]
+dev = ["Sphinx (==7.4.7)", "Sphinx (==8.1.3)", "attrs (==24.3.0)", "bump2version (==1.0.1)", "coverage (>=6.2)", "dacite (==1.8.1)", "dataclass-factory (==2.16)", "dataclass-wizard[toml]", "dataclasses-json (==0.6.7)", "flake8 (>=3)", "jsons (==1.6.3)", "mashumaro (==3.15)", "matplotlib", "pip (>=21.3.1)", "pydantic (==2.10.3)", "pytest (==8.3.4)", "pytest-benchmark[histogram]", "pytest-cov (==6.0.0)", "pytest-mock (>=3.6.1)", "python-dotenv (>=1,<2)", "pytimeparse (==1.1.8)", "sphinx-autodoc-typehints (==2.5.0)", "sphinx-copybutton (==0.5.2)", "sphinx-issues (==5.0.0)", "tomli (>=2,<3)", "tomli (>=2,<3)", "tomli-w (>=1,<2)", "tox (==4.23.2)", "twine (==6.0.1)", "typing-extensions (>=4.9.0)", "watchdog[watchmedo] (==6.0.0)", "wheel (==0.45.1)"]
+dotenv = ["python-dotenv (>=1,<2)"]
+timedelta = ["pytimeparse (>=1.1.7)"]
+toml = ["tomli (>=2,<3)", "tomli (>=2,<3)", "tomli-w (>=1,<2)"]
+yaml = ["PyYAML (>=6,<7)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirror.sjtu.edu.cn/pypi/web/simple"
+reference = "mirrors"
+
+[[package]]
 name = "fastapi"
 version = "0.104.1"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -649,6 +675,27 @@ url = "https://mirror.sjtu.edu.cn/pypi/web/simple"
 reference = "mirrors"
 
 [[package]]
+name = "todoist-api-python"
+version = "3.1.0"
+description = "Official Python SDK for the Todoist API."
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "todoist_api_python-3.1.0-py3-none-any.whl", hash = "sha256:20ee2445983235566e7f2b2c82f769b9a265bb3fa6d7aad3fa73cf9e2d4cd787"},
+    {file = "todoist_api_python-3.1.0.tar.gz", hash = "sha256:7cad732f58a4bdfbd1c073a1a8be1c1b4e13ae0c8be210bb7840fbba06eb987c"},
+]
+
+[package.dependencies]
+annotated-types = "*"
+dataclass-wizard = ">=0.35.0,<1.0"
+requests = ">=2.32.3,<3"
+
+[package.source]
+type = "legacy"
+url = "https://mirror.sjtu.edu.cn/pypi/web/simple"
+reference = "mirrors"
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
@@ -996,4 +1043,4 @@ reference = "mirrors"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "859cafd63bfe036fcae1183381a5bf7401e9554a201bc488a317b3a946899fae"
+content-hash = "05a0b52bb2ed2493845fe9e5fc086be21fb8eb9b98704fa6bafe904dac169b6b"
