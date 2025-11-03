@@ -471,16 +471,47 @@ class TodoistClient:
     # ----- Section archive/unarchive utilities (API v1 Sync + v1 REST) -----
     def get_archived_sections(self, project_id: str) -> list:
         """
-        List archived sections for a project using Todoist API v1.
+        List archived sections for a project using Sync API only.
         """
-        url = f"https://api.todoist.com/api/v1/sections/archived"
-        params = {"project_id": project_id}
+        # 1) Try Sync API to fetch all sections (active + archived), then filter
         try:
-            response = requests.get(url, headers={"Authorization": self.headers["Authorization"]}, params=params)
-            response.raise_for_status()
-            return response.json() if response.text else []
+            import json as _json
+            resp = requests.post(
+                "https://api.todoist.com/api/v1/sync",
+                data={
+                    "sync_token": "*",
+                    "resource_types": _json.dumps(["sections"]),
+                },
+                headers={
+                    "Authorization": self.headers["Authorization"],
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json() if resp.text else {}
+            sections = data.get("sections") or []
+
+            def _eq(a, b):
+                try:
+                    return int(a) == int(b)
+                except Exception:
+                    return a == b
+
+            archived = []
+            for s in sections:
+                if not _eq(s.get("project_id"), project_id):
+                    continue
+                # heuristics for archived flag across formats
+                is_archived = (
+                    s.get("is_archived") is True or
+                    s.get("archived") is True or
+                    s.get("is_archived_section") is True
+                )
+                if is_archived:
+                    archived.append(s)
+            return archived
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to get archived sections: {e}")
+            logger.error(f"Failed to get archived sections via sync: {e}")
             return []
 
     def get_archived_section_by_name(self, project_id: str, section_name: str) -> Optional[Dict[str, Any]]:
