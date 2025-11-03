@@ -90,29 +90,16 @@ async def handle_playback_stop(data: Dict[str, Any]):
         return
     
     todoist_item_id = get_todoist_item_id(jellyfin_item_id)
-    
+    logger.info(f"Mapping lookup: Jellyfin {jellyfin_item_id} -> Todoist {todoist_item_id}")
     if not todoist_item_id:
         logger.warning(f"No Todoist task found for Jellyfin item {jellyfin_item_id}")
         return
     
     section_id = None
-    series_name = get_series_name(data)
-    try:
-        logger.info(f"Todoist get_sections params: project_id={TODOIST_PROJECT_ID}")
-        sections = todoist_api.get_sections(project_id=TODOIST_PROJECT_ID)
-        for s in sections:
-            if s.name == series_name:
-                section_id = s.id
-                break
-    except Exception as e:
-        err_msg = getattr(e, 'message', str(e))
-        status_code = getattr(e, 'status_code', None)
-        response_body = getattr(e, 'response_body', None)
-        logger.error(f"Failed to list sections via SDK: {err_msg} (status={status_code}) body={response_body}")
     
     closed_ok = False
     try:
-        logger.info(f"Todoist complete_task params: task_id={todoist_item_id}")
+        logger.info(f"Todoist complete_task params: task_id={todoist_item_id!r}")
         closed_ok = todoist_api.complete_task(task_id=todoist_item_id)
     except Exception as e:
         err_msg = getattr(e, 'message', str(e))
