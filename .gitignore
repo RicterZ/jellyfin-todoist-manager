@@ -141,3 +141,6 @@ logs/
 *.sqlite
 *.sqlite3
 
+# Local test scripts
+test_reorder.py
+
