@@ -468,5 +468,87 @@ class TodoistClient:
         new_order = max_order + 1
         return self.update_section(section_id, order=new_order)
 
+    # ----- Section archive/unarchive utilities (API v1 Sync + v1 REST) -----
+    def get_archived_sections(self, project_id: str) -> list:
+        """
+        List archived sections for a project using Todoist API v1.
+        """
+        url = f"https://api.todoist.com/api/v1/sections/archived"
+        params = {"project_id": project_id}
+        try:
+            response = requests.get(url, headers={"Authorization": self.headers["Authorization"]}, params=params)
+            response.raise_for_status()
+            return response.json() if response.text else []
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to get archived sections: {e}")
+            return []
+
+    def get_archived_section_by_name(self, project_id: str, section_name: str) -> Optional[Dict[str, Any]]:
+        archived = self.get_archived_sections(project_id)
+        for s in archived:
+            if s.get("name") == section_name:
+                return s
+        return None
+
+    def archive_section(self, section_id: str) -> bool:
+        """
+        Archive a section via Todoist API v1 Sync command.
+        """
+        url = "https://api.todoist.com/api/v1/sync"
+        import json as _json
+        commands = [{
+            "type": "section_archive",
+            "uuid": f"archive-{datetime.utcnow().timestamp()}",
+            "args": {"id": int(section_id) if isinstance(section_id, str) and section_id.isdigit() else section_id}
+        }]
+        data = {
+            "sync_token": "*",
+            "resource_types": _json.dumps(["sections"]),
+            "commands": _json.dumps(commands),
+        }
+        try:
+            resp = requests.post(url, data=data, headers={
+                "Authorization": self.headers["Authorization"],
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
+            if resp.status_code == 200:
+                logger.info(f"Archived section {section_id}")
+                return True
+            logger.error(f"Archive section failed: {resp.status_code} {resp.text}")
+            return False
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Archive section request error: {e}")
+            return False
+
+    def unarchive_section(self, section_id: str) -> bool:
+        """
+        Unarchive a section via Todoist API v1 Sync command.
+        """
+        url = "https://api.todoist.com/api/v1/sync"
+        import json as _json
+        commands = [{
+            "type": "section_unarchive",
+            "uuid": f"unarchive-{datetime.utcnow().timestamp()}",
+            "args": {"id": int(section_id) if isinstance(section_id, str) and section_id.isdigit() else section_id}
+        }]
+        data = {
+            "sync_token": "*",
+            "resource_types": _json.dumps(["sections"]),
+            "commands": _json.dumps(commands),
+        }
+        try:
+            resp = requests.post(url, data=data, headers={
+                "Authorization": self.headers["Authorization"],
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
+            if resp.status_code == 200:
+                logger.info(f"Unarchived section {section_id}")
+                return True
+            logger.error(f"Unarchive section failed: {resp.status_code} {resp.text}")
+            return False
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Unarchive section request error: {e}")
+            return False
+
     # Note: sorting/reordering logic removed per latest requirements
 

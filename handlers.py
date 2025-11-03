@@ -25,8 +25,16 @@ async def handle_item_added(data: Dict[str, Any]):
     # Get series name for section
     series_name = get_series_name(data)
     
-    # Get or create section based on series name in the configured project
-    section_id = todoist_client.get_or_create_section(TODOIST_PROJECT_ID, series_name)
+    # If a section with same name was archived, unarchive and reuse it; otherwise get/create
+    archived_section = todoist_client.get_archived_section_by_name(TODOIST_PROJECT_ID, series_name)
+    if archived_section and archived_section.get('id'):
+        section_id = archived_section.get('id')
+        if not todoist_client.unarchive_section(section_id):
+            logger.error(f"Failed to unarchive section for series: {series_name}")
+            return
+    else:
+        # Get or create section based on series name in the configured project
+        section_id = todoist_client.get_or_create_section(TODOIST_PROJECT_ID, series_name)
     
     if not section_id:
         logger.error(f"Failed to get or create section for series: {series_name}")
@@ -108,15 +116,14 @@ async def handle_playback_stop(data: Dict[str, Any]):
         logger.info(f"Marked Todoist task {todoist_item_id} as completed for: {title}")
         print(f"✅ Completed: {title}")
         
-        # Check if section is empty and move it to end if so
+        # If section is empty after completion, archive it
         if section_id:
             # Check if section is now empty (after task completion)
             if todoist_client.is_section_empty(TODOIST_PROJECT_ID, section_id):
-                # Move empty section to end
-                if todoist_client.move_empty_section_to_end(TODOIST_PROJECT_ID, section_id):
-                    logger.info(f"Moved empty section to end: {section_id}")
+                if todoist_client.archive_section(section_id):
+                    logger.info(f"Archived empty section: {section_id}")
                 else:
-                    logger.warning(f"Failed to move empty section to end: {section_id}")
+                    logger.warning(f"Failed to archive empty section: {section_id}")
     else:
         logger.error(f"Failed to complete Todoist task {todoist_item_id}")
 
