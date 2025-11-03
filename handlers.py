@@ -50,6 +50,11 @@ async def handle_item_added(data: Dict[str, Any]):
             logger.info(f"Created Todoist task {todoist_item_id} in section '{series_name}' for Jellyfin item {jellyfin_item_id}")
         else:
             logger.error(f"Failed to save mapping for Jellyfin item {jellyfin_item_id}")
+        # Reorder sections: newly added task's section should be at the front
+        try:
+            todoist_client.reorder_sections(TODOIST_PROJECT_ID, front_section_id=section_id)
+        except Exception:
+            pass
     else:
         logger.error(f"Failed to create Todoist task for Jellyfin item {jellyfin_item_id}")
 
@@ -117,6 +122,11 @@ async def handle_playback_stop(data: Dict[str, Any]):
                     logger.info(f"Moved empty section to end: {section_id}")
                 else:
                     logger.warning(f"Failed to move empty section to end: {section_id}")
+            # Reorder sections after completion to enforce ordering rules
+            try:
+                todoist_client.reorder_sections(TODOIST_PROJECT_ID)
+            except Exception:
+                pass
     else:
         logger.error(f"Failed to complete Todoist task {todoist_item_id}")
 
