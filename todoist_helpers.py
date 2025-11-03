@@ -104,23 +104,32 @@ def map_legacy_task_id_to_v1(api_token: str, legacy_id: str) -> Optional[str]:
         "Authorization": f"Bearer {api_token}",
         "Content-Type": "application/json",
     }
-    payload = {
-        "ids": [int(legacy_id)],
-        "resource_type": "task",
-    }
-    try:
-        r = requests.post(url, headers=headers, data=json.dumps(payload))
-        if r.status_code != 200:
-            return None
-        data = r.json()
-        mappings = data.get("mappings") or data
-        # Expect list of objects like {"old_id": 123, "new_id": "6X4V..."}
-        for m in mappings:
-            old_id = str(m.get("old_id"))
-            new_id = m.get("new_id")
-            if old_id == legacy_id and new_id:
-                return str(new_id)
-        return None
+    # Try with possible resource_type aliases
+    for resource_type in ("task", "item", "items", "tasks"):
+        payload = {
+            "ids": [int(legacy_id)],
+            "resource_type": resource_type,
+        }
+        try:
+            r = requests.post(url, headers=headers, json=payload)
+            if r.status_code != 200:
+                continue
+            data = r.json() or {}
+            # Accept multiple possible keys in response
+            mappings = (
+                data.get("mappings")
+                or data.get("id_mappings")
+                or data.get("results")
+                or []
+            )
+            for m in mappings:
+                old_id = str(m.get("old_id") or m.get("legacy_id") or "")
+                new_id = m.get("new_id") or m.get("v1_id")
+                if old_id == legacy_id and new_id:
+                    return str(new_id)
+        except Exception:
+            continue
+    return None
     except Exception:
         return None
 

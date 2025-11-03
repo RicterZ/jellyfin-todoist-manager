@@ -98,8 +98,10 @@ async def handle_playback_stop(data: Dict[str, Any]):
         if new_id:
             logger.info(f"Mapped legacy Todoist ID {todoist_item_id} -> v1 ID {new_id}")
             todoist_item_id = new_id
-            # Update database mapping to new ID
             save_mapping(jellyfin_item_id, todoist_item_id)
+        else:
+            logger.error(f"Failed to map legacy Todoist ID {todoist_item_id} to v1; skipping completion")
+            return
     if not todoist_item_id:
         logger.warning(f"No Todoist task found for Jellyfin item {jellyfin_item_id}")
         return
