@@ -1,11 +1,15 @@
 import json
 import logging
+import os
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request, HTTPException
 
 from database import init_database
 from handlers import handle_item_added, handle_playback_stop
+from config import TODOIST_API_KEY, TODOIST_PROJECT_ID
+from todoist_api_python.api import TodoistAPI
+from todoist_helpers import start_background_section_archiver
 
 # Load environment variables
 load_dotenv()
@@ -19,6 +23,14 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI application
 app = FastAPI(title="Jellyfin Todoist Manager", version="1.0.0")
+# Start background archiver thread
+try:
+    interval = int(os.getenv("SECTION_ARCHIVE_SCAN_INTERVAL", "120"))
+except ValueError:
+    interval = 120
+_bg_api = TodoistAPI(TODOIST_API_KEY)
+start_background_section_archiver(_bg_api, TODOIST_PROJECT_ID, TODOIST_API_KEY, interval)
+
 
 
 @app.post("/webhook")

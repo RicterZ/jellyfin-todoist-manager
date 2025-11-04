@@ -2,8 +2,12 @@ import requests
 import json
 from datetime import datetime
 from typing import Optional, List
+import logging
+import time
+import threading
 
 from todoist_api_python.api import TodoistAPI
+logger = logging.getLogger(__name__)
 
 
 def _iter_results(obj):
@@ -140,5 +144,36 @@ def map_legacy_task_id_to_v1(api_token: str, legacy_id: str) -> Optional[str]:
         except Exception:
             continue
     return None
+
+
+def start_background_section_archiver(api: TodoistAPI, project_id: str, api_token: str, interval_seconds: int = 120) -> None:
+    """启动一个守护线程，定期扫描并归档空的 section。"""
+    def _loop():
+        while True:
+            try:
+                sections_iter = api.get_sections(project_id=project_id)
+                # 扁平化分页
+                sections = []
+                if isinstance(sections_iter, list):
+                    sections = sections_iter
+                else:
+                    for batch in sections_iter:
+                        sections.extend(batch)
+                for s in sections:
+                    sid = getattr(s, 'id', None)
+                    if not sid:
+                        continue
+                    try:
+                        if is_section_empty(api, project_id, sid):
+                            if archive_section(api_token, sid):
+                                logger.info(f"Background: archived empty section {sid}")
+                    except Exception as se:
+                        logger.error(f"Background section check failed for {sid}: {se}")
+            except Exception as e:
+                logger.error(f"Background section archiver error: {e}")
+            time.sleep(max(10, int(interval_seconds)))
+
+    t = threading.Thread(target=_loop, name="section-archiver", daemon=True)
+    t.start()
 
 
